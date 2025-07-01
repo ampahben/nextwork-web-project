@@ -1,11 +1,10 @@
 version: 0.2
 env:
   variables:
-    CODEARTIFACT_AUTH_TOKEN: $(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region eu-west-2 --query authorizationToken --output text)
-phases:
+    CODEARTIFACT_AUTH_TOKEN: $(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region eu-west>phases:
   install:
     runtime-versions:
-      java: corretto11
+      java: corretto8
     commands:
       - echo "Generating settings.xml..."
       - cat > ./settings.xml <<EOF
@@ -35,12 +34,3 @@ phases:
     <mirror>
       <id>nextwork-nextwork-devops-cicd</id>
       <name>nextwork-nextwork-devops-cicd</name>
-      <url>https://nextwork-185847269562.d.codeartifact.eu-west-2.amazonaws.com/maven/nextwork-devops-cicd/</url>
-      <mirrorOf>*</mirrorOf>
-    </mirror>
-  </mirrors>
-</settings>
-EOF
-  build:
-    commands:
-      - mvn clean install -s ./settings.xml
