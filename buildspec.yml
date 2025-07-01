@@ -5,14 +5,14 @@ env:
 phases:
   install:
     runtime-versions:
-      java: corretto11
+      java: corretto8
     commands:
-      # 1. Get CodeArtifact token
+      # Get CodeArtifact token
       - export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region $AWS_REGION --query authorizationToken --output text)
-      - echo "TOKEN_HEAD: ${CODEARTIFACT_AUTH_TOKEN:0:10}..."  # Debug
+      - echo "TOKEN_HEAD: ${CODEARTIFACT_AUTH_TOKEN:0:10}..."
 
-      # 2. Generate settings.xml
-      - |
+      # Generate settings.xml (using explicit string format)
+      - >
         cat > settings.xml << 'EOF'
         <settings>
           <servers>
@@ -32,10 +32,9 @@ phases:
         </settings>
         EOF
 
-      # 3. Debug settings.xml
-      - grep -A 2 "<password>" settings.xml
+      # Debug: Verify settings.xml
+      - cat settings.xml
 
   build:
     commands:
-      # 4. Run Maven with explicit token injection
       - mvn clean install -s settings.xml -Denv.CODEARTIFACT_AUTH_TOKEN="$CODEARTIFACT_AUTH_TOKEN" -B -e -X | tee mvn.log
