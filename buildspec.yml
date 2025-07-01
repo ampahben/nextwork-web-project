@@ -2,16 +2,16 @@ version: 0.2
 env:
   variables:
     AWS_REGION: eu-west-2
-phases:
+phases:  # Fixed spelling
   install:
     runtime-versions:
       java: corretto8
     commands:
-      # Get CodeArtifact token
+      # Get CodeArtifact token - FIXED COMMAND
       - export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region $AWS_REGION --query authorizationToken --output text)
       - echo "TOKEN_HEAD: ${CODEARTIFACT_AUTH_TOKEN:0:10}..."
 
-      # Generate settings.xml (using explicit string format)
+      # Generate settings.xml
       - >
         cat > settings.xml << 'EOF'
         <settings>
