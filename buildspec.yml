@@ -1,23 +1,46 @@
 version: 0.2
-
+env:
+  variables:
+    CODEARTIFACT_AUTH_TOKEN: $(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region eu-west-2 --query authorizationToken --output text)
 phases:
   install:
     runtime-versions:
-      java: corretto8
-  pre_build:
+      java: corretto11
     commands:
-      - echo Initializing environment
-      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region eu-west-2 --query authorizationToken --output text`
-
+      - echo "Generating settings.xml..."
+      - cat > ./settings.xml <<EOF
+<settings>
+  <servers>
+    <server>
+      <id>nextwork-nextwork-devops-cicd</id>
+      <username>aws</username>
+      <password>\${env.CODEARTIFACT_AUTH_TOKEN}</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>nextwork-nextwork-devops-cicd</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>nextwork-nextwork-devops-cicd</id>
+          <url>https://nextwork-185847269562.d.codeartifact.eu-west-2.amazonaws.com/maven/nextwork-devops-cicd/</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <mirrors>
+    <mirror>
+      <id>nextwork-nextwork-devops-cicd</id>
+      <name>nextwork-nextwork-devops-cicd</name>
+      <url>https://nextwork-185847269562.d.codeartifact.eu-west-2.amazonaws.com/maven/nextwork-devops-cicd/</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
   build:
     commands:
-      - echo Build started on `date`
-      - mvn -s settings.xml compile
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - mvn -s settings.xml package
-artifacts:
-  files:
-    - target/nextwork-web-project.war
-  discard-paths: no
+      - mvn clean install -s ./settings.xml
