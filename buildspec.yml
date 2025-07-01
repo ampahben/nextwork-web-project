@@ -1,47 +1,41 @@
 version: 0.2
 env:
   variables:
-    CODEARTIFACT_AUTH_TOKEN: $(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region eu-west-2 --query authorizationToken --output text)
+    AWS_REGION: eu-west-2
 phases:
   install:
     runtime-versions:
-      java: corretto8
+      java: corretto11
     commands:
-      - echo "Generating settings.xml..."
+      # 1. Get CodeArtifact token
+      - export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain nextwork --domain-owner 185847269562 --region $AWS_REGION --query authorizationToken --output text)
+      - echo "TOKEN_HEAD: ${CODEARTIFACT_AUTH_TOKEN:0:10}..."  # Debug
+
+      # 2. Generate settings.xml
       - |
-        cat > ./settings.xml << 'EOF'
+        cat > settings.xml << 'EOF'
         <settings>
           <servers>
             <server>
-              <id>nextwork-nextwork-devops-cicd</id>
+              <id>codeartifact</id>
               <username>aws</username>
               <password>${env.CODEARTIFACT_AUTH_TOKEN}</password>
             </server>
           </servers>
-          <profiles>
-            <profile>
-              <id>nextwork-nextwork-devops-cicd</id>
-              <activation>
-                <activeByDefault>true</activeByDefault>
-              </activation>
-              <repositories>
-                <repository>
-                  <id>nextwork-nextwork-devops-cicd</id>
-                  <url>https://nextwork-185847269562.d.codeartifact.eu-west-2.amazonaws.com/maven/nextwork-devops-cicd/</url>
-                </repository>
-              </repositories>
-            </profile>
-          </profiles>
           <mirrors>
             <mirror>
-              <id>nextwork-nextwork-devops-cicd</id>
-              <name>nextwork-nextwork-devops-cicd</name>
+              <id>codeartifact-mirror</id>
               <url>https://nextwork-185847269562.d.codeartifact.eu-west-2.amazonaws.com/maven/nextwork-devops-cicd/</url>
-              <mirrorOf>*</mirrorOf>
+              <mirrorOf>central</mirrorOf>
             </mirror>
           </mirrors>
         </settings>
         EOF
+
+      # 3. Debug settings.xml
+      - grep -A 2 "<password>" settings.xml
+
   build:
     commands:
-      - mvn clean install -s ./settings.xml	
+      # 4. Run Maven with explicit token injection
+      - mvn clean install -s settings.xml -Denv.CODEARTIFACT_AUTH_TOKEN="$CODEARTIFACT_AUTH_TOKEN" -B -e -X | tee mvn.log
